@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Pygics">
+<meta name="author" content="hyjang@cisco.com">
+<link rel="icon" href="/page/resource/image/favicon.ico">
+
+<title>{{ main.name }}</title>
+
+<link href="/page/resource/css/bootstrap.min.css" rel="stylesheet">
+<link href="/page/resource/css/ie10-viewport-bug-workaround.css" rel="stylesheet">
+<link href="/page/resource/css/font-awesome.min.css" rel="stylesheet">
+<link href="/page/resource/css/page.css" rel="stylesheet">
+<link href="/page/resource/css/pageroot.css" rel="stylesheet">
+
+<!--[if lt IE 9]>
+	<script src="/page/js/html5shiv.min.js"></script>
+	<script src="/page/js/respond.min.js"></script>
+<![endif]-->
+
+</head>
+
+<body>
+	<script src="/page/resource/js/jquery-2.2.4.min.js"></script>
+	<script src="/page/resource/js/jquery.cookie.js"></script>
+	<script src="/page/resource/js/bootstrap.min.js"></script>
+	<script src="/page/resource/js/datatables.min.js"></script>
+	<script src="/page/resource/js/ie10-viewport-bug-workaround.js"></script>
+	<script src="/page/resource/js/pagecore.js"></script>
+	<script src="/page/resource/js/pageroot.js"></script>
+	
+	<div id="root-page-menu">
+		<div id="root-page-menu-up-indent">
+			<div id="root-page-menu-up" class="clickable">
+				<i class="fa fa-angle-double-up"></i> Hide
+			</div>
+		</div>
+		<div id="root-page-menu-plane">
+			<div class="container-fluid">
+				<span id="root-page-menu-title">
+					<img id="root-page-menu-logo" src="/page/resource/image/pygics_logo_72.png" />
+					<h1>Page Operation</h1>
+				</span>
+				<span id="root-page-menu-ar">
+					<div id="root-page-menu-ar-title" ar-sec=3>Flip Seconds</div>
+					<div id="root-page-menu-ar-sec-ctrl">
+						<div id="root-page-menu-ar-up"><i class="fa fa-caret-up"></i></div>
+						<div id="root-page-menu-ar-sec" ar-sec="5">5</div>
+						<div id="root-page-menu-ar-down"><i class="fa fa-caret-down"></i></div>
+					</div>
+					<i id="root-page-menu-ar-ctrl" class="fa fa-2x fa-pause"></i>
+				</span>
+			</div>
+			<div id="page" class="container-fluid"></div>
+		</div>
+		<div id="root-page-menu-down-indent">
+			<div id="root-page-menu-down" class="clickable">
+				<i class="fa fa-angle-double-down"></i> Page
+			</div>
+		</div>
+	</div>
+
+	<div id="root-page-show" class="carousel slide" data-ride="carousel">
+		<div id="root-page-show-inner" class="carousel-inner" role="listbox">
+			<div class="item active root-page-inner-blank" target="#">
+				<img src="/page/resource/image/pygics_logo_96.png">
+				<div>Page.</div>
+			</div>
+		</div>
+		<a id="root-page-show-control-left" class="left carousel-control" href="#root-page-show" role="button" data-slide="prev">
+			<span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+		</a>
+		<a id="root-page-show-control-right" class="right carousel-control" href="#root-page-show" role="button" data-slide="next">
+			<span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+		</a>
+	</div>
+	
+</body>
+</html>

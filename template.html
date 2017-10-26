@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+{% for meta in meta_list -%}
+<meta{{ meta }}>
+{% endfor -%}
+
+<link rel="icon" href="{{ favicon }}">
+<title>{{ title }}</title>
+
+<link href="/page/static/css/ie10-viewport-bug-workaround.css" rel="stylesheet">
+{% for css in css_list -%}
+<link href="{{ css }}" rel="stylesheet">
+{% endfor -%}
+
+
+{% for head in head_list -%}
+{{ head }}
+{% endfor -%}
+
+<!--[if lt IE 9]>
+	<script src="/page/static/js/html5shiv.min.js"></script>
+	<script src="/page/static/js/respond.min.js"></script>
+<![endif]-->
+
+</head>
+
+<body>
+
+<script src="/page/static/js/ie10-viewport-bug-workaround.js"></script>
+{% for js in js_list -%}
+<script src="{{ js }}"></script>
+{% endfor -%}
+
+{% for hbody in hbody_list -%}
+{{ hbody }}
+{% endfor -%}
+
+<div id="page_main" page_url="{{ main }}"><script>$(document).ready(function() { patch("page_main") });</script></div>
+
+{% for fbody in fbody_list -%}
+{{ fbody }}
+{% endfor -%}
+
+</body>
+
+</html>
