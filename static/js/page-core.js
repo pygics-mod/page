@@ -1,8 +1,13 @@
 var preproc = null;
 var postproc = null;
 
-function parse_page_dom(dom) {
+function parse_dom(dom) {
 	if (typeof dom == "object") {
+		if ("error" in dom) {
+			console.log(dom.error);
+			window.alert(dom.error);
+			return ""
+		}
 		var html = "";
 		var attrs = dom.attrs;
 		var elems = dom.elems;
@@ -12,7 +17,7 @@ function parse_page_dom(dom) {
 		}
 		html += ">";
 		for (var i = 0, elem; elem = elems[i]; i++) {
-			html += parse_page_dom(elem);
+			html += parse_dom(elem);
 		}
 		html += "</" + dom.tag + ">";
 		return html;
@@ -20,7 +25,7 @@ function parse_page_dom(dom) {
 	return dom;
 }
 
-function patch(id) {
+function patch_dom(id) {
 	var _id = "#" + id;
 	$.ajax({
         type: "GET",
@@ -30,18 +35,19 @@ function patch(id) {
         	if (preproc != null) { preproc(id); }
         },
         success: function(data) {
-        	$(_id).html(parse_page_dom(data));
+        	$(_id).html(parse_dom(data));
         	if (postproc != null) { postproc(id); }
         },
         error: function(xhr, status, thrown) {
+        	$(_id).html("");
         	console.log(status, xhr, thrown);
-        	window.alert(JSON.parse(xhr.responseText).error);
+        	window.alert(status + " : " + thrown);
         	if (postproc != null) { postproc(id); }
         }
     });
 }
 
-function replace(id) {
+function replace_dom(id) {
 	var _id = "#" + id;
 	$.ajax({
         type: "GET",
@@ -51,22 +57,17 @@ function replace(id) {
         	if (preproc != null) { preproc(id); }
         },
         success: function(data) {
-        	$(_id).replaceWith(parse_page_dom(data));
+        	$(_id).replaceWith(parse_dom(data));
         	if (postproc != null) { postproc(id); }
         },
         error: function(xhr, status, thrown) {
+        	$(_id).html("");
         	console.log(status, xhr, thrown);
-        	window.alert(JSON.parse(xhr.responseText).error);
+        	window.alert(status + " : " + thrown);
         	if (postproc != null) { postproc(id); }
         }
     });
 }
-
-
-
-
-
-
 
 //function patchView(view) {
 //	addLoading(view);

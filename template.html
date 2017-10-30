@@ -15,10 +15,7 @@
 <link href="{{ css }}" rel="stylesheet">
 {% endfor -%}
 
-
-{% for head in head_list -%}
 {{ head }}
-{% endfor -%}
 
 <!--[if lt IE 9]>
 	<script src="/page/static/js/html5shiv.min.js"></script>
@@ -34,15 +31,11 @@
 <script src="{{ js }}"></script>
 {% endfor -%}
 
-{% for hbody in hbody_list -%}
-{{ hbody }}
-{% endfor -%}
+{{ header }}
 
-<div id="page_main" page_url="{{ main }}"><script>$(document).ready(function() { patch("page_main") });</script></div>
+<div id="page_init" page_url="{{ init }}"><script>$(document).ready(function() { patch_dom("page_init") });</script></div>
 
-{% for fbody in fbody_list -%}
-{{ fbody }}
-{% endfor -%}
+{{ footer }}
 
 </body>
 
