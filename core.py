@@ -9,23 +9,26 @@ import types
 import jinja2
 from pygics import Lock, ContentType, export, rest
 
-@export('GET', '/page/empty_page', content_type=ContentType.AppJson)
-def empty_page(req): return {'error' : 'Empty Page'}
-
 class Page:
     
-    _JS_JQUERY = '/page/static/js/jquery-3.2.1.min.js'
-    _JS_PAGE_CORE = '/page/static/js/page-core.js'
+    _CACHE_DATA = {}
     
-    class _CacheData_(types.FileType):
-        def __init__(self, path):
-            with open(path, 'rb') as fd: self.data = fd.read()
-            self.path = path
-        
-        @property
-        def name(self): return self.path
-        def read(self): return self.data
-        def close(self): return None
+    @classmethod
+    def getCache(cls, file_path):
+        if file_path in Page._CACHE_DATA: return Page._CACHE_DATA[file_path]
+        else:
+            class Cache(types.FileType):
+                def __init__(self, file_path):
+                    with open(file_path, 'rb') as fd: self.data = fd.read()
+                    self.file_path = file_path
+                @property
+                def name(self): return self.file_path
+                def read(self): return self.data
+                def close(self): return None
+            if not os.path.exists(file_path): raise Exception('could not find %s' % file_path)
+            cache = Cache(file_path)
+            Page._CACHE_DATA[file_path] = cache
+            return cache
     
     def __init__(self,
                  url=None,
@@ -45,13 +48,13 @@ class Page:
         if self.url != '/': self.static_url = '%s/%s' % (self.url, static)
         else: self.static_url = '/%s' % static
         
-        self._page_init = '/page/empty_page'
+        self._page_init = '/page/empty'
         
         self._page_title = title
         self._page_favicon = favicon
         self._page_meta_list = []
         self._page_css_list = []
-        self._page_js_list = [Page._JS_JQUERY, Page._JS_PAGE_CORE]
+        self._page_js_list = []
         self._page_head = ''
         self._page_header = ''
         self._page_footer = ''
@@ -72,14 +75,7 @@ class Page:
         def send_static(req, *argv):
             path = '/'.join(argv)
             file_path = '%s/%s' % (self.static_path, path)
-            if self._page_cache:
-                if file_path in self._page_cache_data:
-                    return self._page_cache_data[file_path]
-                else:
-                    if not os.path.exists(file_path): raise Exception('could not find %s' % path)
-                    cache_data = Page._CacheData_(file_path)
-                    self._page_cache_data[file_path] = cache_data
-                    return cache_data
+            if self._page_cache: return Page.getCache(file_path)
             else:
                 if not os.path.exists(file_path): raise Exception('could not find %s' % path)
                 return open(file_path, 'rb')
@@ -170,3 +166,9 @@ class Page:
         return self
 
 Page(url='/page')
+
+@export('GET', '/page/empty', content_type=ContentType.AppJson)
+def empty_page(req): return {'error' : 'Page Empty'}
+
+@export('GET', '/favicon.ico', content_type=ContentType.AppStream)
+def default_favicon(req, *argv): return Page.getCache(pwd() + '/static/image/favicon.ico')
