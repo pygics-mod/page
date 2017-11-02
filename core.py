@@ -9,6 +9,9 @@ import types
 import jinja2
 from pygics import Lock, ContentType, export, rest
 
+@export('GET', '/page/empty_page', content_type=ContentType.AppJson)
+def empty_page(req): return {'error' : 'Empty Page'}
+
 class Page:
     
     _JS_JQUERY = '/page/static/js/jquery-3.2.1.min.js'
@@ -113,14 +116,14 @@ class Page:
     
     def css(self, *css_list):
         self._page_lock.on()
-        for css in css_list: self._page_css_list.append('%s/%s' % (self.url if self.url != '/' else '', css))
+        for css in css_list: self._page_css_list.append(css)
         self._page_updated = True
         self._page_lock.off()
         return self
     
     def js(self, *js_list):
         self._page_lock.on()
-        for js in js_list: self._page_js_list.append('%s/%s' % (self.url if self.url != '/' else '', js))
+        for js in js_list: self._page_js_list.append(js)
         self._page_updated = True
         self._page_lock.off()
         return self
@@ -165,3 +168,5 @@ class Page:
         self._page_updated = True
         self._page_lock.off()
         return self
+
+Page(url='/page')
