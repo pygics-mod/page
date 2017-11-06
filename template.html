@@ -42,7 +42,7 @@
 <!-- page javascript -->
 <script src="/page/static/js/ie10-viewport-bug-workaround.js"></script>
 <script src="/page/static/js/jquery-3.2.1.min.js"></script>
-<script src="/page/static/js/page-core.js"></script>
+<script src="/page/static/js/page.js"></script>
 <!-- additional javascript -->
 {% for js in js_list -%}
 <script src="{{ js }}"></script>
@@ -52,7 +52,7 @@
 {{ header }}
 
 <!-- ======================== INIT ======================== -->
-<div id="page_init" page_url="{{ init }}"><script>$(document).ready(function() { patch_dom("page_init") });</script></div>
+<div id="page_init" page_url="{{ init }}"><script>$(document).ready(function() { page_patch("page_init") });</script></div>
 
 <!-- ======================= FOOTER ======================= -->
 {{ footer }}

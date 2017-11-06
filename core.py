@@ -5,9 +5,50 @@ Created on 2017. 10. 25.
 '''
 
 import os
+import uuid
 import types
 import jinja2
-from pygics import Lock, ContentType, export, rest
+import inspect
+from pygics import Lock, ContentType, Response, export, rest
+
+def createId(): return 'id-' + str(uuid.uuid4())
+
+class Tag(dict):
+    
+    @classmethod
+    def attrs(cls, target, **inject):
+        for key, val in inject.items():
+            key_low = key.lower()
+            target[key_low] = '%s %s' % (target[key_low], val) if key_low in target else val
+        return target
+    
+    def __init__(self, tag, **attrs):
+        dict.__init__(self, tag=tag, elems=[], attrs={})
+        for key, val in attrs.items(): self['attrs'][key.lower()] = val
+    
+    def __len__(self, *args, **kwargs):
+        return self['elems'].__len__()
+    
+    def __str__(self):
+        ret = '<%s' % self['tag']
+        for k, v in self['attrs'].items(): ret += ' %s="%s"' % (k, v)
+        ret += '>'
+        for elem in self['elems']: ret += str(elem)
+        ret += '</%s>' % self['tag']
+        return ret
+    
+    def opts(self, opts): return self.attr(**opts)
+    
+    def attr(self, **attrs):
+        tag_attrs = self['attrs']
+        for key, val in attrs.items():
+            key_low = key.lower()
+            tag_attrs[key_low] = '%s %s' % (tag_attrs[key_low], val) if key_low in tag_attrs else val
+        return self
+    
+    def html(self, *elems):
+        for elem in elems: self['elems'].append(elem)
+        return self
 
 class Page:
     
@@ -33,8 +74,8 @@ class Page:
     def __init__(self,
                  url=None,
                  title='',
-                 static='static',
                  favicon='/page/static/image/favicon.ico',
+                 static='static',
                  cache=True):
         mod_path, mod_name = pmd()
         mod_name = mod_name.replace('.', '/')
@@ -49,6 +90,7 @@ class Page:
         else: self.static_url = '/%s' % static
         
         self._page_init = '/page/empty'
+        self._page_view = {}
         
         self._page_title = title
         self._page_favicon = favicon
@@ -145,6 +187,9 @@ class Page:
         self._page_lock.off()
         return self
     
+    #===========================================================================
+    # View Definition
+    #===========================================================================
     def init(self, func):
         self._page_lock.on()
         self._page_init = '%s/%s' % (self.url if self.url != '/' else '', func.__name__)
@@ -163,9 +208,109 @@ class Page:
         
         self._page_updated = True
         self._page_lock.off()
-        return self
+    
+    def view(self, func):
+        id = createId()
+        name = func.__name__
+        url = '%s/%s' % (self.url if self.url != '/' else '', name)
+        self._page_view[name] = {'id' : id, 'name' : name, 'url' : url}
+        
+        @rest('GET', url)
+        def get(req, *argv, **kargs):
+            return func(req, *argv, **kargs)
+        
+        @rest('POST', url)
+        def post(req, *argv, **kargs): return func(req, *argv, **kargs)
+         
+        @rest('PUT', url)
+        def put(req, *argv, **kargs): return func(req, *argv, **kargs)
+         
+        @rest('DELETE', url)
+        def delete(req, *argv, **kargs): return func(req, *argv, **kargs)
+    
+    #===========================================================================
+    # Action Functions
+    #===========================================================================
+    def patch(self, name, *argv):
+        view = self._page_view[name]
+        id = view['id']
+        url = '%s/%s' % (view['url'] + '/'.join(argv)) if argv else view['url']
+        return Tag('script', Id=id, Page_Url=url).html(
+            '$(document).ready(function(){page_patch("%s")});' % id
+        )
+    
+    def reload(self, *names):
+        reload = []
+        for name in names:
+            reload.append(self._page_view[name]['id'])
+        return {'reload' : reload}
+    
+    def get(self, name, *argv):
+        
+        class Get(Tag):
+            
+            def __init__(self, view, *argv):
+                Tag.__init__(self, 'script')
+                self._view_id = view['id']
+                self._view_url = '%s/%s' % (view['url'] + '/'.join(argv)) if argv else view['url']
+                self._send_id = self._view_id + '-get'
+                self.html('$(document).ready(function(){$(".%s").click(function(){page_get($(this));});});' % self._send_id)
+                self.Send = {'class' : self._send_id, 'page_url' : self._view_url, 'page_view' : self._view_id}
+        
+        return Get(self._page_view[name], *argv)
+    
+    def post(self, name, *argv):
+        
+        class Post(Tag):
+              
+            def __init__(self, view, *argv):
+                Tag.__init__(self, 'script')
+                self._view = view
+                self._view_id = view['id']
+                self._view_url = '%s/%s' % (view['url'] + '/'.join(argv)) if argv else view['url']
+                self._data_id = createId()
+                self._send_id = createId()
+                self.html('$(document).ready(function(){$(".%s").click(function(){page_post($(this));});});' % self._send_id)
+                self.Data = {'class' : self._data_id}
+                self.Send = {'class' : self._send_id, 'page_url' : self._view_url, 'page_view' : self._view_id, 'page_data' : self._data_id}
+        
+        return Post(self._page_view[name], *argv)
+    
+    def put(self, name, *argv):
+        
+        class Put(Tag):
+              
+            def __init__(self, view, *argv):
+                Tag.__init__(self, 'script')
+                self._view = view
+                self._view_id = view['id']
+                self._view_url = '%s/%s' % (view['url'] + '/'.join(argv)) if argv else view['url']
+                self._data_id = createId()
+                self._send_id = createId()
+                self.html('$(document).ready(function(){$(".%s").click(function(){page_put($(this));});});' % self._send_id)
+                self.Data = {'class' : self._data_id}
+                self.Send = {'class' : self._send_id, 'page_url' : self._view_url, 'page_view' : self._view_id, 'page_data' : self._data_id}
+        
+        return Put(self._page_view[name], *argv)
+    
+    def delete(self, name, *argv):
+        
+        class Delete(Tag):
+            
+            def __init__(self, view, *argv):
+                Tag.__init__(self, 'script')
+                self._view_id = view['id']
+                self._view_url = '%s/%s' % (view['url'] + '/'.join(argv)) if argv else view['url']
+                self._send_id = self._view_id + '-del'
+                self.html('$(document).ready(function(){$(".%s").click(function(){page_delete($(this));});});' % self._send_id)
+                self.Send = {'class' : self._send_id, 'page_url' : self._view_url, 'page_view' : self._view_id}
+        
+        return Delete(self._page_view[name], *argv)
 
-Page(url='/page')
+#===============================================================================
+# Page Statics
+#===============================================================================
+Page(url='/page', cache=False)
 
 @export('GET', '/page/empty', content_type=ContentType.AppJson)
 def empty_page(req): return {'error' : 'Page Empty'}

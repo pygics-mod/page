@@ -4,7 +4,7 @@ Created on 2017. 10. 31.
 @author: HyechurnJang
 '''
 
-from tags import Tag
+from core import Tag
 
 # <a>
 class A(Tag):

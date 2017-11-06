@@ -4,8 +4,5 @@ Created on 2017. 5. 30.
 @author: HyechurnJang
 '''
 
-from pygics import ContentType, export
-from core import Page
-from tags import Tag
-
+from core import Page, Tag
 import W3
