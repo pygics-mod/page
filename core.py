@@ -37,7 +37,7 @@ class Tag(dict):
         ret += '</%s>' % self['tag']
         return ret
     
-    def opts(self, opts): return self.attr(**opts)
+    def __rshift__(self, opts): return self.attr(**opts)
     
     def attr(self, **attrs):
         tag_attrs = self['attrs']
@@ -190,46 +190,54 @@ class Page:
     #===========================================================================
     # View Definition
     #===========================================================================
-    def init(self, func):
-        self._page_lock.on()
-        self._page_init = '%s/%s' % (self.url if self.url != '/' else '', func.__name__)
+    def init(self, **opts):
         
-        @rest('GET', self._page_init)
-        def get(req, *argv, **kargs): return func(req, *argv, **kargs)
+        def wrapper(func):
+            self._page_lock.on()
+            self._page_init = '%s/%s' % (self.url if self.url != '/' else '', func.__name__)
+            
+            @rest('GET', self._page_init, **opts)
+            def get(req, *argv, **kargs): return func(req, *argv, **kargs)
+            
+            @rest('POST', self._page_init, **opts)
+            def post(req, *argv, **kargs): return func(req, *argv, **kargs)
+             
+            @rest('PUT', self._page_init, **opts)
+            def put(req, *argv, **kargs): return func(req, *argv, **kargs)
+             
+            @rest('DELETE', self._page_init, **opts)
+            def delete(req, *argv, **kargs): return func(req, *argv, **kargs)
+            
+            self._page_updated = True
+            self._page_lock.off()
         
-        @rest('POST', self._page_init)
-        def post(req, *argv, **kargs): return func(req, *argv, **kargs)
-         
-        @rest('PUT', self._page_init)
-        def put(req, *argv, **kargs): return func(req, *argv, **kargs)
-         
-        @rest('DELETE', self._page_init)
-        def delete(req, *argv, **kargs): return func(req, *argv, **kargs)
-        
-        self._page_updated = True
-        self._page_lock.off()
+        return wrapper
     
-    def view(self, func):
-        id = createId()
-        name = func.__name__
-        url = '%s/%s' % (self.url if self.url != '/' else '', name)
-        self._page_view[name] = {'id' : id, 'name' : name, 'url' : url}
+    def view(self, **opts):
         
-        @rest('GET', url)
-        def get(req, *argv, **kargs):
-            return func(req, *argv, **kargs)
+        def wrapper(func):
+            id = createId()
+            name = func.__name__
+            url = '%s/%s' % (self.url if self.url != '/' else '', name)
+            self._page_view[name] = {'id' : id, 'name' : name, 'url' : url}
+            
+            @rest('GET', url, **opts)
+            def get(req, *argv, **kargs):
+                return func(req, *argv, **kargs)
+            
+            @rest('POST', url, **opts)
+            def post(req, *argv, **kargs): return func(req, *argv, **kargs)
+             
+            @rest('PUT', url, **opts)
+            def put(req, *argv, **kargs): return func(req, *argv, **kargs)
+             
+            @rest('DELETE', url, **opts)
+            def delete(req, *argv, **kargs): return func(req, *argv, **kargs)
         
-        @rest('POST', url)
-        def post(req, *argv, **kargs): return func(req, *argv, **kargs)
-         
-        @rest('PUT', url)
-        def put(req, *argv, **kargs): return func(req, *argv, **kargs)
-         
-        @rest('DELETE', url)
-        def delete(req, *argv, **kargs): return func(req, *argv, **kargs)
+        return wrapper
     
     #===========================================================================
-    # Action Functions
+    # View Functions
     #===========================================================================
     def patch(self, name, *argv):
         view = self._page_view[name]
@@ -245,65 +253,68 @@ class Page:
             reload.append(self._page_view[name]['id'])
         return {'reload' : reload}
     
+    #===========================================================================
+    # Interactive Functions
+    #===========================================================================
+    
+    class InteractiveTag(Tag):
+        
+        def __init__(self, view, *argv):
+            Tag.__init__(self, 'script')
+            self._view_id = view['id']
+            self._view_url = '%s/%s' % (view['url'] + '/'.join(argv)) if argv else view['url']
+            self._event_id = createId()
+            self._event_attr = {'class' : self._event_id, 'page_url' : self._view_url, 'page_view' : self._view_id}
+        
+        def event(self): return self._event_attr
+    
     def get(self, name, *argv):
         
-        class Get(Tag):
+        class Get(Page.InteractiveTag):
             
             def __init__(self, view, *argv):
-                Tag.__init__(self, 'script')
-                self._view_id = view['id']
-                self._view_url = '%s/%s' % (view['url'] + '/'.join(argv)) if argv else view['url']
-                self._send_id = self._view_id + '-get'
-                self.html('$(document).ready(function(){$(".%s").click(function(){page_get($(this));});});' % self._send_id)
-                self.Send = {'class' : self._send_id, 'page_url' : self._view_url, 'page_view' : self._view_id}
+                Page.InteractiveTag.__init__(self, view, *argv)
+                self.html('$(document).ready(function(){$(".%s").click(function(){page_get($(this));});});' % self._event_id)
         
         return Get(self._page_view[name], *argv)
     
     def post(self, name, *argv):
         
-        class Post(Tag):
+        class Post(Page.InteractiveTag):
               
             def __init__(self, view, *argv):
-                Tag.__init__(self, 'script')
-                self._view = view
-                self._view_id = view['id']
-                self._view_url = '%s/%s' % (view['url'] + '/'.join(argv)) if argv else view['url']
-                self._data_id = createId()
-                self._send_id = createId()
-                self.html('$(document).ready(function(){$(".%s").click(function(){page_post($(this));});});' % self._send_id)
-                self.Data = {'class' : self._data_id}
-                self.Send = {'class' : self._send_id, 'page_url' : self._view_url, 'page_view' : self._view_id, 'page_data' : self._data_id}
+                Page.InteractiveTag.__init__(self, view, *argv)
+                self._data_id = self._event_id + '-data'
+                self._data_attr = {'class' : self._data_id}
+                self._event_attr['page_data'] = self._data_id
+                self.html('$(document).ready(function(){$(".%s").click(function(){page_post($(this));});});' % self._event_id)
+            
+            def data(self): return self._data_attr
         
         return Post(self._page_view[name], *argv)
     
     def put(self, name, *argv):
         
-        class Put(Tag):
+        class Put(Page.InteractiveTag):
               
             def __init__(self, view, *argv):
-                Tag.__init__(self, 'script')
-                self._view = view
-                self._view_id = view['id']
-                self._view_url = '%s/%s' % (view['url'] + '/'.join(argv)) if argv else view['url']
-                self._data_id = createId()
-                self._send_id = createId()
-                self.html('$(document).ready(function(){$(".%s").click(function(){page_put($(this));});});' % self._send_id)
-                self.Data = {'class' : self._data_id}
-                self.Send = {'class' : self._send_id, 'page_url' : self._view_url, 'page_view' : self._view_id, 'page_data' : self._data_id}
+                Page.InteractiveTag.__init__(self, view, *argv)
+                self._data_id = self._event_id + '-data'
+                self._data_attr = {'class' : self._data_id}
+                self._event_attr['page_data'] = self._data_id
+                self.html('$(document).ready(function(){$(".%s").click(function(){page_put($(this));});});' % self._event_id)
+            
+            def data(self): return self._data_attr
         
         return Put(self._page_view[name], *argv)
     
     def delete(self, name, *argv):
         
-        class Delete(Tag):
+        class Delete(Page.InteractiveTag):
             
             def __init__(self, view, *argv):
-                Tag.__init__(self, 'script')
-                self._view_id = view['id']
-                self._view_url = '%s/%s' % (view['url'] + '/'.join(argv)) if argv else view['url']
-                self._send_id = self._view_id + '-del'
-                self.html('$(document).ready(function(){$(".%s").click(function(){page_delete($(this));});});' % self._send_id)
-                self.Send = {'class' : self._send_id, 'page_url' : self._view_url, 'page_view' : self._view_id}
+                Page.InteractiveTag.__init__(self, view, *argv)
+                self.html('$(document).ready(function(){$(".%s").click(function(){page_delete($(this));});});' % self._event_id)
         
         return Delete(self._page_view[name], *argv)
 
