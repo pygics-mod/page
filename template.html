@@ -19,8 +19,8 @@
 <link rel="icon" href="{{ favicon }}">
 
 <!-- page css -->
-<link href="/page/static/css/ie10-viewport-bug-workaround.css" rel="stylesheet">
-<link href="/page/static/css/style.css" rel="stylesheet">
+<link href="/page/static/template/css/ie10-viewport-bug-workaround.css" rel="stylesheet">
+<link href="/page/static/template/css/style.css" rel="stylesheet">
 <!-- additional css -->
 {% for css in css_list -%}
 <link href="{{ css }}" rel="stylesheet">
@@ -30,8 +30,8 @@
 {{ head }}
 <!-- IE specific -->
 <!--[if lt IE 9]>
-	<script src="/page/static/js/html5shiv.min.js"></script>
-	<script src="/page/static/js/respond.min.js"></script>
+	<script src="/page/static/template/js/html5shiv.min.js"></script>
+	<script src="/page/static/template/js/respond.min.js"></script>
 <![endif]-->
 
 </head>
@@ -40,9 +40,9 @@
 <body>
 
 <!-- page javascript -->
-<script src="/page/static/js/ie10-viewport-bug-workaround.js"></script>
-<script src="/page/static/js/jquery-3.2.1.min.js"></script>
-<script src="/page/static/js/page.js"></script>
+<script src="/page/static/template/js/ie10-viewport-bug-workaround.js"></script>
+<script src="/page/static/template/js/jquery-3.2.1.min.js"></script>
+<script src="/page/static/template/js/page.js"></script>
 <!-- additional javascript -->
 {% for js in js_list -%}
 <script src="{{ js }}"></script>

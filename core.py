@@ -9,18 +9,11 @@ import uuid
 import types
 import jinja2
 import inspect
-from pygics import Lock, ContentType, Response, export, rest
+from pygics import Lock, ContentType, export, rest
 
-def createId(): return 'id-' + str(uuid.uuid4())
+def createVid(): return 'v-' + str(uuid.uuid4())
 
 class Tag(dict):
-    
-    @classmethod
-    def attrs(cls, target, **inject):
-        for key, val in inject.items():
-            key_low = key.lower()
-            target[key_low] = '%s %s' % (target[key_low], val) if key_low in target else val
-        return target
     
     def __init__(self, tag, **attrs):
         dict.__init__(self, tag=tag, elems=[], attrs={})
@@ -37,44 +30,39 @@ class Tag(dict):
         ret += '</%s>' % self['tag']
         return ret
     
-    def __rshift__(self, opts): return self.attr(**opts)
-    
+    #===========================================================================
+    # Attributes (a.k.a : event & links)
+    #===========================================================================
     def attr(self, **attrs):
-        tag_attrs = self['attrs']
+        own_attrs = self['attrs']
         for key, val in attrs.items():
             key_low = key.lower()
-            tag_attrs[key_low] = '%s %s' % (tag_attrs[key_low], val) if key_low in tag_attrs else val
+            own_attrs[key_low] = '%s %s' % (own_attrs[key_low], val) if key_low in own_attrs else val
         return self
     
+    def __lshift__(self, opts):
+        if opts: return self.attr(**opts)
+        return self
+    
+    #===========================================================================
+    # Elements (a.k.a : children)
+    #===========================================================================
     def html(self, *elems):
         for elem in elems: self['elems'].append(elem)
+        return self
+    
+    def __rshift__(self, elems):
+        if elems:
+            if isinstance(elems, tuple) or isinstance(elems, list): return self.html(*elems)
+            else: return self.html(*(elems,))
         return self
 
 class Page:
     
-    _CACHE_DATA = {}
-    
-    @classmethod
-    def getCache(cls, file_path):
-        if file_path in Page._CACHE_DATA: return Page._CACHE_DATA[file_path]
-        else:
-            class Cache(types.FileType):
-                def __init__(self, file_path):
-                    with open(file_path, 'rb') as fd: self.data = fd.read()
-                    self.file_path = file_path
-                @property
-                def name(self): return self.file_path
-                def read(self): return self.data
-                def close(self): return None
-            if not os.path.exists(file_path): raise Exception('could not find %s' % file_path)
-            cache = Cache(file_path)
-            Page._CACHE_DATA[file_path] = cache
-            return cache
-    
     def __init__(self,
                  url=None,
                  title='',
-                 favicon='/page/static/image/favicon.ico',
+                 favicon='/page/static/template/image/favicon.ico',
                  static='static',
                  cache=True):
         mod_path, mod_name = pmd()
@@ -110,8 +98,7 @@ class Page:
         with open(pwd() + '/template.html') as fd: self._page_template = jinja2.Template(fd.read())
         
         @export('GET', self.url, content_type=ContentType.TextHtml)
-        def send_template(req):
-            return self.__render__()
+        def send_template(req): return self.__render__()
         
         @export('GET', self.static_url)
         def send_static(req, *argv):
@@ -121,21 +108,41 @@ class Page:
             else:
                 if not os.path.exists(file_path): raise Exception('could not find %s' % path)
                 return open(file_path, 'rb')
+    
+    _CACHE_DATA = {}
+    
+    @classmethod
+    def getCache(cls, file_path):
+        if file_path in Page._CACHE_DATA: return Page._CACHE_DATA[file_path]
+        else:
+            class Cache(types.FileType):
+                def __init__(self, file_path):
+                    with open(file_path, 'rb') as fd: self.data = fd.read()
+                    self.file_path = file_path
+                @property
+                def name(self): return self.file_path
+                def read(self): return self.data
+                def close(self): return None
+            if not os.path.exists(file_path): raise Exception('could not find %s' % file_path)
+            cache = Cache(file_path)
+            Page._CACHE_DATA[file_path] = cache
+            return cache
         
     def __render__(self):
         if self._page_updated:
             self._page_lock.on()
-            self._page_rendered = self._page_template.render(**{
+            self._page_rendered = self._page_template.render({
                 'init' : self._page_init,
                 'title' : self._page_title,
                 'favicon' : self._page_favicon,
                 'meta_list' : self._page_meta_list,
                 'css_list' : self._page_css_list,
                 'js_list' : self._page_js_list,
-                'head' : str(self._page_head),
-                'header' : str(self._page_header),
-                'footer' : str(self._page_footer)
+                'head' : unicode(self._page_head),
+                'header' : unicode(self._page_header),
+                'footer' : unicode(self._page_footer)
             })
+            self._page_rendered = self._page_rendered.encode('utf-8')
             self._page_updated = False
             self._page_lock.off()
             return self._page_rendered
@@ -193,21 +200,25 @@ class Page:
     def init(self, **opts):
         
         def wrapper(func):
-            self._page_lock.on()
-            self._page_init = '%s/%s' % (self.url if self.url != '/' else '', func.__name__)
+            id = createVid()
+            name = func.__name__
+            url = '%s/%s' % (self.url if self.url != '/' else '', func.__name__)
+            self._page_view[name] = {'id' : id, 'name' : name, 'url' : url}
             
-            @rest('GET', self._page_init, **opts)
+            @rest('GET', url, **opts)
             def get(req, *argv, **kargs): return func(req, *argv, **kargs)
             
-            @rest('POST', self._page_init, **opts)
+            @rest('POST', url, **opts)
             def post(req, *argv, **kargs): return func(req, *argv, **kargs)
              
-            @rest('PUT', self._page_init, **opts)
+            @rest('PUT', url, **opts)
             def put(req, *argv, **kargs): return func(req, *argv, **kargs)
              
-            @rest('DELETE', self._page_init, **opts)
+            @rest('DELETE', url, **opts)
             def delete(req, *argv, **kargs): return func(req, *argv, **kargs)
             
+            self._page_lock.on()
+            self._page_init = url
             self._page_updated = True
             self._page_lock.off()
         
@@ -216,14 +227,13 @@ class Page:
     def view(self, **opts):
         
         def wrapper(func):
-            id = createId()
+            id = createVid()
             name = func.__name__
             url = '%s/%s' % (self.url if self.url != '/' else '', name)
             self._page_view[name] = {'id' : id, 'name' : name, 'url' : url}
             
             @rest('GET', url, **opts)
-            def get(req, *argv, **kargs):
-                return func(req, *argv, **kargs)
+            def get(req, *argv, **kargs): return func(req, *argv, **kargs)
             
             @rest('POST', url, **opts)
             def post(req, *argv, **kargs): return func(req, *argv, **kargs)
@@ -236,22 +246,43 @@ class Page:
         
         return wrapper
     
+    def __getitem__(self, name):
+        if isinstance(name, tuple):
+            _name = name[0]
+            view = self._page_view[_name]
+            _url = '%s/%s' %(view['url'], '/'.join(name[1:]))
+        else:
+            _name = name
+            view = self._page_view[_name]
+            _url = view['url']
+        return {'id' : view['id'], 'name' : _name, 'url' : _url}
+    
     #===========================================================================
     # View Functions
     #===========================================================================
     def patch(self, name, *argv):
         view = self._page_view[name]
         id = view['id']
-        url = '%s/%s' % (view['url'] + '/'.join(argv)) if argv else view['url']
+        url = '%s/%s' % (view['url'], '/'.join(argv)) if argv else view['url']
         return Tag('script', Id=id, Page_Url=url).html(
             '$(document).ready(function(){page_patch("%s")});' % id
         )
+    
+    def __rshift__(self, name):
+        if name:
+            if isinstance(name, tuple) or isinstance(name, list): return self.patch(*name)
+            else: return self.patch(name)
+        return self
     
     def reload(self, *names):
         reload = []
         for name in names:
             reload.append(self._page_view[name]['id'])
         return {'reload' : reload}
+    
+    def __eq__(self, names):
+        if isinstance(names, tuple) or isinstance(names, list): return self.reload(*names)
+        else: return self.reload(*(names,))
     
     #===========================================================================
     # Interactive Functions
@@ -263,11 +294,9 @@ class Page:
             Tag.__init__(self, 'script')
             self._view_id = view['id']
             self._view_url = '%s/%s' % (view['url'] + '/'.join(argv)) if argv else view['url']
-            self._event_id = createId()
-            self._event_attr = {'class' : self._event_id, 'page_url' : self._view_url, 'page_view' : self._view_id}
+            self._event_id = createVid()
+            self.event = {'class' : self._event_id, 'page_url' : self._view_url, 'page_view' : self._view_id}
         
-        def event(self): return self._event_attr
-    
     def get(self, name, *argv):
         
         class Get(Page.InteractiveTag):
@@ -285,11 +314,9 @@ class Page:
             def __init__(self, view, *argv):
                 Page.InteractiveTag.__init__(self, view, *argv)
                 self._data_id = self._event_id + '-data'
-                self._data_attr = {'class' : self._data_id}
-                self._event_attr['page_data'] = self._data_id
                 self.html('$(document).ready(function(){$(".%s").click(function(){page_post($(this));});});' % self._event_id)
-            
-            def data(self): return self._data_attr
+                self.data = {'class' : self._data_id}
+                self.event['page_data'] = self._data_id
         
         return Post(self._page_view[name], *argv)
     
@@ -300,12 +327,10 @@ class Page:
             def __init__(self, view, *argv):
                 Page.InteractiveTag.__init__(self, view, *argv)
                 self._data_id = self._event_id + '-data'
-                self._data_attr = {'class' : self._data_id}
-                self._event_attr['page_data'] = self._data_id
                 self.html('$(document).ready(function(){$(".%s").click(function(){page_put($(this));});});' % self._event_id)
+                self.data = {'class' : self._data_id}
+                self.event['page_data'] = self._data_id
             
-            def data(self): return self._data_attr
-        
         return Put(self._page_view[name], *argv)
     
     def delete(self, name, *argv):
@@ -321,7 +346,7 @@ class Page:
 #===============================================================================
 # Page Statics
 #===============================================================================
-Page(url='/page', cache=False)
+Page(url='/page', cache=True)
 
 @export('GET', '/page/empty', content_type=ContentType.AppJson)
 def empty_page(req): return {'error' : 'Page Empty'}
