@@ -12,5 +12,4 @@ from core import Page, Tag, createVid
 #===============================================================================
 # Tags
 #===============================================================================
-import W3
-import DataTable
+from tags import W3, DataTable

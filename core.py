@@ -8,7 +8,6 @@ import os
 import uuid
 import types
 import jinja2
-import inspect
 from pygics import Lock, ContentType, export, rest
 
 def createVid(): return 'v-' + str(uuid.uuid4())
