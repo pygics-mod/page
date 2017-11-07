@@ -61,7 +61,7 @@ class Page:
     def __init__(self,
                  url=None,
                  title='',
-                 favicon='/page/static/template/image/favicon.ico',
+                 favicon='/page/static/image/favicon.ico',
                  static='static',
                  cache=True):
         mod_path, mod_name = pmd()
