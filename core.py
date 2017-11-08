@@ -43,6 +43,12 @@ class Tag(dict):
         if opts: return self.attr(**opts)
         return self
     
+    def baseattr(self, **attrs):
+        own_attrs = self['attrs']
+        for key, val in attrs.items():
+            key_low = key.lower()
+            own_attrs[key_low] = '%s %s' % (val, own_attrs[key_low]) if key_low in own_attrs else val
+        return self
     #===========================================================================
     # Elements (a.k.a : children)
     #===========================================================================
@@ -294,8 +300,10 @@ class Page:
             self._view_id = view['id']
             self._view_url = '%s/%s' % (view['url'] + '/'.join(argv)) if argv else view['url']
             self._event_id = createVid()
-            self.event = {'class' : self._event_id, 'page_url' : self._view_url, 'page_view' : self._view_id}
+            self._event_attr = {'class' : self._event_id, 'page_url' : self._view_url, 'page_view' : self._view_id}
         
+        def event(self): return self._event_attr
+    
     def get(self, name, *argv):
         
         class Get(Page.InteractiveTag):
@@ -313,9 +321,11 @@ class Page:
             def __init__(self, view, *argv):
                 Page.InteractiveTag.__init__(self, view, *argv)
                 self._data_id = self._event_id + '-data'
+                self._data_attr = {'class' : self._data_id}
+                self._event_attr['page_data'] = self._data_id
                 self.html('$(document).ready(function(){$(".%s").click(function(){page_post($(this));});});' % self._event_id)
-                self.data = {'class' : self._data_id}
-                self.event['page_data'] = self._data_id
+            
+            def data(self): return self._data_attr
         
         return Post(self._page_view[name], *argv)
     
@@ -326,9 +336,11 @@ class Page:
             def __init__(self, view, *argv):
                 Page.InteractiveTag.__init__(self, view, *argv)
                 self._data_id = self._event_id + '-data'
+                self._data_attr = {'class' : self._data_id}
+                self._event_attr['page_data'] = self._data_id
                 self.html('$(document).ready(function(){$(".%s").click(function(){page_put($(this));});});' % self._event_id)
-                self.data = {'class' : self._data_id}
-                self.event['page_data'] = self._data_id
+            
+            def data(self): return self._data_attr
             
         return Put(self._page_view[name], *argv)
     
