@@ -25,7 +25,7 @@ class Tag(dict):
         ret = '<%s' % self['tag']
         for k, v in self['attrs'].items(): ret += ' %s="%s"' % (k, v)
         ret += '>'
-        for elem in self['elems']: ret += str(elem)
+        for elem in self['elems']: ret += unicode(elem)
         ret += '</%s>' % self['tag']
         return ret
     
@@ -251,16 +251,9 @@ class Page:
         
         return wrapper
     
-    def __getitem__(self, name):
-        if isinstance(name, tuple):
-            _name = name[0]
-            view = self._page_view[_name]
-            _url = '%s/%s' %(view['url'], '/'.join(name[1:]))
-        else:
-            _name = name
-            view = self._page_view[_name]
-            _url = view['url']
-        return {'id' : view['id'], 'name' : _name, 'url' : _url}
+    def getView(self, name, *path):
+        view = self._page_view[name]
+        return {'id' : view['id'], 'name' : name, 'url' : '%s/%s' % (view['url'], '/'.join(path)) if path else view['url']}
     
     #===========================================================================
     # View Functions
@@ -273,11 +266,8 @@ class Page:
             '$(document).ready(function(){page_patch("%s")});' % id
         )
     
-    def __rshift__(self, name):
-        if name:
-            if isinstance(name, tuple) or isinstance(name, list): return self.patch(*name)
-            else: return self.patch(name)
-        return self
+    def __call__(self, name, *argv):
+        return self.patch(name, *argv)
     
     def reload(self, *names):
         reload = []
@@ -285,7 +275,7 @@ class Page:
             reload.append(self._page_view[name]['id'])
         return {'reload' : reload}
     
-    def __eq__(self, names):
+    def __getitem__(self, names):
         if isinstance(names, tuple) or isinstance(names, list): return self.reload(*names)
         else: return self.reload(*(names,))
     
