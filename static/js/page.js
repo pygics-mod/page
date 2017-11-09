@@ -53,7 +53,7 @@ function page_patch(id) {
         error: function(xhr, status, thrown) {
         	console.log(status, xhr, thrown);
         	window.alert(status + " : " + thrown);
-        	if (page_postproc != null) { page_postproc(id); }
+        	if (page_errproc != null) { page_errproc(id); }
         }
     });
 }
@@ -77,7 +77,7 @@ function page_get(obj) {
         error: function(xhr, status, thrown) {
         	console.log(status, xhr, thrown);
         	window.alert(status + " : " + thrown);
-        	if (page_postproc != null) { page_postproc(id); }
+        	if (page_errproc != null) { page_errproc(id); }
         }
     });
 }
@@ -112,7 +112,7 @@ function page_post(obj) {
         error: function(xhr, status, thrown) {
         	console.log(status, xhr, thrown);
         	window.alert(status + " : " + thrown);
-        	if (page_postproc != null) { page_postproc(id); }
+        	if (page_errproc != null) { page_errproc(id); }
         }
 	});
 }
@@ -147,7 +147,7 @@ function page_put(obj) {
         error: function(xhr, status, thrown) {
         	console.log(status, xhr, thrown);
         	window.alert(status + " : " + thrown);
-        	if (page_postproc != null) { page_postproc(id); }
+        	if (page_errproc != null) { page_errproc(id); }
         }
 	});
 }
@@ -171,7 +171,7 @@ function page_delete(obj) {
         error: function(xhr, status, thrown) {
         	console.log(status, xhr, thrown);
         	window.alert(status + " : " + thrown);
-        	if (page_postproc != null) { page_postproc(id); }
+        	if (page_errproc != null) { page_errproc(id); }
         }
     });
 }
