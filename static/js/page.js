@@ -2,7 +2,7 @@ var page_preproc = null;
 var page_postproc = null;
 var page_errproc = null;
 
-function page_parse(dom, id=null, page_url=null) {
+function page_parse(dom, id, page_url) {
 	if (typeof dom == "object") {
 		if ("tag" in dom) {
 			var html = "";
