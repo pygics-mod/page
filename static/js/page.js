@@ -1,6 +1,6 @@
-var preproc = null;
-var postproc = null;
-var errproc = null;
+var page_preproc = null;
+var page_postproc = null;
+var page_errproc = null;
 
 function page_parse(dom, id=null, page_url=null) {
 	if (typeof dom == "object") {
@@ -43,17 +43,17 @@ function page_patch(id) {
         url: url,
         dataType: "json",
         beforeSend: function() {
-        	if (preproc != null) { preproc(id); }
+        	if (page_preproc != null) { page_preproc(id); }
         },
         success: function(data) {
         	var parsed_html = page_parse(data, id, url);
         	if (parsed_html !== null) { obj.replaceWith(parsed_html); }
-        	if (postproc != null) { postproc(id); }
+        	if (page_postproc != null) { page_postproc(id); }
         },
         error: function(xhr, status, thrown) {
         	console.log(status, xhr, thrown);
         	window.alert(status + " : " + thrown);
-        	if (postproc != null) { postproc(id); }
+        	if (page_postproc != null) { page_postproc(id); }
         }
     });
 }
@@ -67,17 +67,17 @@ function page_get(obj) {
         url: url,
         dataType: "json",
         beforeSend: function() {
-        	if (preproc != null) { preproc(id); }
+        	if (page_preproc != null) { page_preproc(id); }
         },
         success: function(data) {
         	var parsed_html = page_parse(data, id, url);
         	if (parsed_html !== null) { view.replaceWith(parsed_html); }
-        	if (postproc != null) { postproc(id); }
+        	if (page_postproc != null) { page_postproc(id); }
         },
         error: function(xhr, status, thrown) {
         	console.log(status, xhr, thrown);
         	window.alert(status + " : " + thrown);
-        	if (postproc != null) { postproc(id); }
+        	if (page_postproc != null) { page_postproc(id); }
         }
     });
 }
@@ -102,17 +102,17 @@ function page_post(obj) {
 		dataType: "json",
 		data: JSON.stringify(data),
 		beforeSend: function() {
-        	if (preproc != null) { preproc(id); }
+        	if (page_preproc != null) { page_preproc(id); }
         },
         success: function(data) {
         	var parsed_html = page_parse(data, id, url);
         	if (parsed_html !== null) { view.replaceWith(parsed_html); }
-        	if (postproc != null) { postproc(id); }
+        	if (page_postproc != null) { page_postproc(id); }
         },
         error: function(xhr, status, thrown) {
         	console.log(status, xhr, thrown);
         	window.alert(status + " : " + thrown);
-        	if (postproc != null) { postproc(id); }
+        	if (page_postproc != null) { page_postproc(id); }
         }
 	});
 }
@@ -137,17 +137,17 @@ function page_put(obj) {
 		dataType: "json",
 		data: JSON.stringify(data),
 		beforeSend: function() {
-        	if (preproc != null) { preproc(id); }
+        	if (page_preproc != null) { page_preproc(id); }
         },
         success: function(data) {
         	var parsed_html = page_parse(data, id, url);
         	if (parsed_html !== null) { view.replaceWith(parsed_html); }
-        	if (postproc != null) { postproc(id); }
+        	if (page_postproc != null) { page_postproc(id); }
         },
         error: function(xhr, status, thrown) {
         	console.log(status, xhr, thrown);
         	window.alert(status + " : " + thrown);
-        	if (postproc != null) { postproc(id); }
+        	if (page_postproc != null) { page_postproc(id); }
         }
 	});
 }
@@ -161,17 +161,17 @@ function page_delete(obj) {
         url: url,
         dataType: "json",
         beforeSend: function() {
-        	if (preproc != null) { preproc(id); }
+        	if (page_preproc != null) { page_preproc(id); }
         },
         success: function(data) {
         	var parsed_html = page_parse(data, id, url);
         	if (parsed_html !== null) { view.replaceWith(parsed_html); }
-        	if (postproc != null) { postproc(id); }
+        	if (page_postproc != null) { page_postproc(id); }
         },
         error: function(xhr, status, thrown) {
         	console.log(status, xhr, thrown);
         	window.alert(status + " : " + thrown);
-        	if (postproc != null) { postproc(id); }
+        	if (page_postproc != null) { page_postproc(id); }
         }
     });
 }

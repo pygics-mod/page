@@ -62,6 +62,52 @@ class Tag(dict):
             else: return self.html(*(elems,))
         return self
 
+class Cache:
+    
+    _CACHE_DATA = {}
+    
+    @classmethod
+    def getCache(cls, file_path):
+        if file_path in Cache._CACHE_DATA:
+            return Cache._CACHE_DATA[file_path]
+        else:
+            class CacheDescriptor(types.FileType):
+                def __init__(self, file_path):
+                    with open(file_path, 'rb') as fd: self.data = fd.read()
+                    self.file_path = file_path
+                @property
+                def name(self): return self.file_path
+                def read(self): return self.data
+                def close(self): return None
+            if not os.path.exists(file_path): raise Exception('could not find %s' % file_path)
+            cache = CacheDescriptor(file_path)
+            Cache._CACHE_DATA[file_path] = cache
+            return cache
+
+class Static:
+    
+    def __init__(self, url, static='static', cache=True):
+        mod_path, mod_name = pmd()
+        mod_name = mod_name.replace('.', '/')
+        
+        if not url: self.url = '/%s' % mod_name
+        elif url[0] == '/': self.url = url
+        else: self.url = '/%s/%s' % (mod_name, url)
+        if not static: self.static = mod_path
+        elif static[0] == '/': self.static = '%s%s' % (mod_path, static)
+        else: self.static = '%s/%s' % (mod_path, static)
+        self._static_cache = cache
+        
+        @export('GET', self.url)
+        def send_static(req, *argv):
+            path = '/'.join(argv)
+            file_path = '%s/%s' % (self.static, path)
+            if self._static_cache: return Cache.getCache(file_path)
+            else:
+                if not os.path.exists(file_path): raise Exception('could not find %s' % path)
+                return open(file_path, 'rb')
+    
+
 class Page:
     
     def __init__(self,
@@ -77,9 +123,12 @@ class Page:
         elif url[0] == '/': self.url = url
         else: self.url = '/%s/%s' % (mod_name, url)
         
-        static = static.replace('/', '')
-        self.static_path = '%s/%s' % (mod_path, static)
-        if self.url != '/': self.static_url = '%s/%s' % (self.url, static)
+        if static[0] == '/': static = static[1:]
+        if not static: self.static_path = mod_path
+        else: self.static_path = '%s/%s' % (mod_path, static)
+        
+        if not static: self.static_url = '%s/static' % self.url
+        elif self.url != '/': self.static_url = '%s/%s' % (self.url, static)
         else: self.static_url = '/%s' % static
         
         self._page_init = '/page/empty'
@@ -109,29 +158,10 @@ class Page:
         def send_static(req, *argv):
             path = '/'.join(argv)
             file_path = '%s/%s' % (self.static_path, path)
-            if self._page_cache: return Page.getCache(file_path)
+            if self._page_cache: return Cache.getCache(file_path)
             else:
                 if not os.path.exists(file_path): raise Exception('could not find %s' % path)
                 return open(file_path, 'rb')
-    
-    _CACHE_DATA = {}
-    
-    @classmethod
-    def getCache(cls, file_path):
-        if file_path in Page._CACHE_DATA: return Page._CACHE_DATA[file_path]
-        else:
-            class Cache(types.FileType):
-                def __init__(self, file_path):
-                    with open(file_path, 'rb') as fd: self.data = fd.read()
-                    self.file_path = file_path
-                @property
-                def name(self): return self.file_path
-                def read(self): return self.data
-                def close(self): return None
-            if not os.path.exists(file_path): raise Exception('could not find %s' % file_path)
-            cache = Cache(file_path)
-            Page._CACHE_DATA[file_path] = cache
-            return cache
         
     def __render__(self):
         if self._page_updated:
@@ -353,4 +383,4 @@ Page(url='/page', cache=True)
 def empty_page(req): return {'error' : 'Page Empty'}
 
 @export('GET', '/favicon.ico', content_type=ContentType.AppStream)
-def default_favicon(req, *argv): return Page.getCache(pwd() + '/static/image/favicon.ico')
+def default_favicon(req, *argv): return Cache.getCache(pwd() + '/static/image/favicon.ico')
