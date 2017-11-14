@@ -232,25 +232,30 @@ class Page:
     #===========================================================================
     # View Definition
     #===========================================================================
-    def init(self, **opts):
+    def init(self, method='r', **opts):
         
         def wrapper(func):
+            crud = method.lower()
             id = createVid()
             name = func.__name__
             url = '%s/%s' % (self.url if self.url != '/' else '', func.__name__)
             self._page_view[name] = {'id' : id, 'name' : name, 'url' : url}
             
-            @rest('GET', url, **opts)
-            def get(req, *argv, **kargs): return func(req, *argv, **kargs)
+            if 'r' in crud or '*' in crud:
+                @rest('GET', url, **opts)
+                def get(req, *argv, **kargs): return func(req, *argv, **kargs)
             
-            @rest('POST', url, **opts)
-            def post(req, *argv, **kargs): return func(req, *argv, **kargs)
-             
-            @rest('PUT', url, **opts)
-            def put(req, *argv, **kargs): return func(req, *argv, **kargs)
-             
-            @rest('DELETE', url, **opts)
-            def delete(req, *argv, **kargs): return func(req, *argv, **kargs)
+            if 'c' in crud or '*' in crud:
+                @rest('POST', url, **opts)
+                def post(req, *argv, **kargs): return func(req, *argv, **kargs)
+            
+            if 'u' in crud or '*' in crud:
+                @rest('PUT', url, **opts)
+                def put(req, *argv, **kargs): return func(req, *argv, **kargs)
+            
+            if 'd' in crud or '*' in crud:
+                @rest('DELETE', url, **opts)
+                def delete(req, *argv, **kargs): return func(req, *argv, **kargs)
             
             self._page_lock.on()
             self._page_init = url
@@ -259,25 +264,30 @@ class Page:
         
         return wrapper
     
-    def view(self, **opts):
+    def view(self, method='r', **opts):
         
         def wrapper(func):
+            crud = method.lower()
             id = createVid()
             name = func.__name__
             url = '%s/%s' % (self.url if self.url != '/' else '', name)
             self._page_view[name] = {'id' : id, 'name' : name, 'url' : url}
             
-            @rest('GET', url, **opts)
-            def get(req, *argv, **kargs): return func(req, *argv, **kargs)
+            if 'r' in crud or '*' in crud:
+                @rest('GET', url, **opts)
+                def get(req, *argv, **kargs): return func(req, *argv, **kargs)
             
-            @rest('POST', url, **opts)
-            def post(req, *argv, **kargs): return func(req, *argv, **kargs)
-             
-            @rest('PUT', url, **opts)
-            def put(req, *argv, **kargs): return func(req, *argv, **kargs)
-             
-            @rest('DELETE', url, **opts)
-            def delete(req, *argv, **kargs): return func(req, *argv, **kargs)
+            if 'c' in crud or '*' in crud:
+                @rest('POST', url, **opts)
+                def post(req, *argv, **kargs): return func(req, *argv, **kargs)
+            
+            if 'u' in crud or '*' in crud:
+                @rest('PUT', url, **opts)
+                def put(req, *argv, **kargs): return func(req, *argv, **kargs)
+            
+            if 'd' in crud or '*' in crud:
+                @rest('DELETE', url, **opts)
+                def delete(req, *argv, **kargs): return func(req, *argv, **kargs)
         
         return wrapper
     
