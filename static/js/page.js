@@ -2,6 +2,18 @@ var page_preproc = null;
 var page_postproc = null;
 var page_errproc = null;
 
+function create_vid() {
+	return 'v-xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+		var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+		return v.toString(16);
+	});
+}
+
+function page_stop_propagation(e) {
+	if(e.stopPropagation) { e.stopPropagation(); }
+	else { e.cancelBubble = true; }
+}
+
 function page_parse(dom, id, page_url) {
 	if (typeof dom == "object") {
 		if ("tag" in dom) {
@@ -42,7 +54,7 @@ function page_patch(id) {
         type: "GET",
         url: url,
         dataType: "json",
-        beforeSend: function() {
+        beforeSend: function(xhr) {
         	if (page_preproc != null) { page_preproc(id); }
         },
         success: function(data) {
@@ -51,9 +63,9 @@ function page_patch(id) {
         	if (page_postproc != null) { page_postproc(id); }
         },
         error: function(xhr, status, thrown) {
-        	console.log(status, xhr, thrown);
+    		if (page_errproc != null) { page_errproc(id); }
+    		console.log(status, xhr, thrown);
         	window.alert(status + " : " + thrown);
-        	if (page_errproc != null) { page_errproc(id); }
         }
     });
 }
@@ -66,7 +78,7 @@ function page_get(obj) {
         type: "GET",
         url: url,
         dataType: "json",
-        beforeSend: function() {
+        beforeSend: function(xhr) {
         	if (page_preproc != null) { page_preproc(id); }
         },
         success: function(data) {
@@ -75,9 +87,9 @@ function page_get(obj) {
         	if (page_postproc != null) { page_postproc(id); }
         },
         error: function(xhr, status, thrown) {
-        	console.log(status, xhr, thrown);
+    		if (page_errproc != null) { page_errproc(id); }
+    		console.log(status, xhr, thrown);
         	window.alert(status + " : " + thrown);
-        	if (page_errproc != null) { page_errproc(id); }
         }
     });
 }
@@ -101,18 +113,18 @@ function page_post(obj) {
 		contentType: "application/json; charset=utf-8",
 		dataType: "json",
 		data: JSON.stringify(data),
-		beforeSend: function() {
-        	if (page_preproc != null) { page_preproc(id); }
-        },
+		beforeSend: function(xhr) {
+	    	if (page_preproc != null) { page_preproc(id); }
+	    },
         success: function(data) {
         	var parsed_html = page_parse(data, id, url);
         	if (parsed_html !== null) { view.replaceWith(parsed_html); }
         	if (page_postproc != null) { page_postproc(id); }
         },
         error: function(xhr, status, thrown) {
-        	console.log(status, xhr, thrown);
+    		if (page_errproc != null) { page_errproc(id); }
+    		console.log(status, xhr, thrown);
         	window.alert(status + " : " + thrown);
-        	if (page_errproc != null) { page_errproc(id); }
         }
 	});
 }
@@ -136,18 +148,18 @@ function page_put(obj) {
 		contentType: "application/json; charset=utf-8",
 		dataType: "json",
 		data: JSON.stringify(data),
-		beforeSend: function() {
-        	if (page_preproc != null) { page_preproc(id); }
-        },
+		beforeSend: function(xhr) {
+	    	if (page_preproc != null) { page_preproc(id); }
+	    },
         success: function(data) {
         	var parsed_html = page_parse(data, id, url);
         	if (parsed_html !== null) { view.replaceWith(parsed_html); }
         	if (page_postproc != null) { page_postproc(id); }
         },
         error: function(xhr, status, thrown) {
-        	console.log(status, xhr, thrown);
+    		if (page_errproc != null) { page_errproc(id); }
+    		console.log(status, xhr, thrown);
         	window.alert(status + " : " + thrown);
-        	if (page_errproc != null) { page_errproc(id); }
         }
 	});
 }
@@ -160,7 +172,7 @@ function page_delete(obj) {
         type: "DELETE",
         url: url,
         dataType: "json",
-        beforeSend: function() {
+        beforeSend: function(xhr) {
         	if (page_preproc != null) { page_preproc(id); }
         },
         success: function(data) {
@@ -169,9 +181,9 @@ function page_delete(obj) {
         	if (page_postproc != null) { page_postproc(id); }
         },
         error: function(xhr, status, thrown) {
-        	console.log(status, xhr, thrown);
+    		if (page_errproc != null) { page_errproc(id); }
+    		console.log(status, xhr, thrown);
         	window.alert(status + " : " + thrown);
-        	if (page_errproc != null) { page_errproc(id); }
         }
     });
 }
